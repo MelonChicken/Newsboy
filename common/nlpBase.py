@@ -1,5 +1,5 @@
 import numpy as np
-import konlpy
+from konlpy import konlpy
 from konlpy.tag import Okt
 
 
