@@ -16,14 +16,15 @@
 
 # vocab_size = len(word_to_id)
 # C = create_co_matrix(corpus, vocab_size)
-5
+
 # most_similar('그대', word_to_id, id_to_word, C, top=5) """
 
-from common.webcrawling import PreprocessPost, URLRequest
+from common.webcrawling import PreprocessPost, URLRequest, DateChecker
 
 """ sample = URLRequest()
 
 print(type(sample))
 print(sample[0]) """
 
-PreprocessPost(URLRequest())
+#PreprocessPost(URLRequest())
+DateChecker()
