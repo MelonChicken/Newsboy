@@ -19,7 +19,7 @@
 
 # most_similar('그대', word_to_id, id_to_word, C, top=5) """
 
-from common.webcrawling import PreprocessPost, URLRequest, DateChecker
+from common.webcrawling import PreprocessPost, URLRequest, DateChecker_Handle
 
 """ sample = URLRequest()
 
@@ -27,4 +27,8 @@ print(type(sample))
 print(sample[0]) """
 
 #PreprocessPost(URLRequest())
-DateChecker()
+
+date_postNum = DateChecker_Handle(intended_date='2024-01-11')
+
+for key in sorted(date_postNum.keys(), reverse=True):
+    print(f'{key}에 올라온 게시물은 {date_postNum[key]} 개입니다.')

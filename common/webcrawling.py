@@ -2,7 +2,7 @@ import requests
 from requests import get
 from bs4 import BeautifulSoup
 
-def URLRequest(page_num = '1', ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+def URLRequest(page_num = 1, ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
   '''입력받은 URL에 대하여 웹스크래핑을 하는 함수입니다. 디시인사이드 실시간베스트에 특화된 함수입니다.
   Args:
     page_num (int) : 크롤링하고자 하는 페이지 넘버입니다.
@@ -13,7 +13,7 @@ def URLRequest(page_num = '1', ftrset = '1', intended_date = 'YYYY-MM-DD', base_
     크롤링한 내용이 BeautifulSoup 자료형으로 리턴됩니다.
   '''
   class params() :
-      page_num = '1'
+      page_num = 1
 
       ftrset = '1'
 
@@ -125,26 +125,26 @@ def PreprocessPost(soup_innerContent, intended_date = 'YYYY-MM-DD'):
     #print(CookedPost_list)
   return CookedPost_list
     
-def DateChecker(page_num = '1', ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+def DateChecker(page_num = 1, ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+  
   '''입력받은 URL에 대하여 분석하고자 하는 날짜의 게시물들을 타겟팅하는 함수입니다. 디시인사이드 실시간베스트에 특화된 함수입니다.
   Args:
     page_num (int) : 크롤링하고자 하는 페이지 넘버입니다.
-    ftrset (int) : 디시인사이드가 제공하는 실시간 베스트, 실베 라이트, 실베 나이트의 필터링 설정입니다.
+    ftrset (str) : 디시인사이드가 제공하는 실시간 베스트, 실베 라이트, 실베 나이트의 필터링 설정입니다.
     intended_date (str) : 분석하고자하는 날짜를 저장합니다.
     base_url (str) : 디시인사이드 실시간베스트 url을 기본 값으로 세팅했습니다.
   Return:
-    해당 날짜의 게시물을 담고 있는 페이지 범위를 int 자료형으로 리턴합니다.
+    게시물들의 게시 날짜를 리스트 안에 int로 저장한 변수 date_collect를 리턴합니다. 
   '''
   class params() :
-      page_num = '1'
+      page_num = 1
 
       ftrset = '1'
-
 
   # 헤더 설정
   headers = {
       'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'}
-
+  #parammeter 변수 저장
   parameter = params()
   parameter.page_num = page_num
   parameter.ftrset = ftrset
@@ -165,15 +165,116 @@ def DateChecker(page_num = '1', ftrset = '1', intended_date = 'YYYY-MM-DD', base
     target_date = intended_date    
     # Print the data
     soup_userContent = soup_content.find('tbody').find_all('tr', class_ = "us-post")
-    date_tracker = []
-    check_date = ''
+    #특정 날에 게시물이 얼마정도 있는지 int 형태를 통해 저장한다.
+    # date_tracker['YYYY-MM-DD'] = ####
+    #해당 값을 한페이지 당 게시물 (100) 수로 나눈다면 페이지가 자동으로 계산될 것.
+    date_collect = []
+
     for post in soup_userContent:
       tmp_date = str(post.find('td', class_ = "gall_date").attrs['title'][:10])
-      if check_date == '':
-        check_date = tmp_date
-      elif check_date == tmp_date:
-        continue
-      else:
-        #if (tmp_date == target_date) or (check_date == target_date):
 
-    
+      date_collect.append(tmp_date)
+
+  return date_collect, page_num
+
+def Bookmarker(date_postNum ={}, date_collect = ['Need to be initialized'], postNum = 0, page_num = 1, ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+  ''' DateChecker를 통해 얻은 게시날짜 모음을 분석하는 함수로, 목표는 게시물 날짜 구별입니다.
+
+      Args:
+        기존 DateChecker의 args를 저장합니다.
+        date_postNum (dict) : bookmarker를 통해 얻은 페이지 정보를 저장하는 dictionary 변수입니다.
+        date_collect (list) : DateChecker 를 통해 얻은 해당 페이지의 게시 날짜 리스트입니다.
+        postNum (int) : bookmarker 과정 중 지금까지 확인한 게시물의 수를 저장하는 int 변수입니다. 
+      
+      Return:
+        (1) 날짜별 저장된 게시물 수를 dictionary 형태로 리턴합니다. 
+        (2) 지금까지 확인한 게시물의 수를 int로 리턴합니다.
+
+  '''
+  date_postNum = date_postNum
+  
+  #for문 안에서 현재 트래킹하고 있는 날짜를 구분하기 위한 변수
+  current_date = ''
+
+  #전체 게시물 수를 저장하기 위한 변수
+  postNum = postNum
+
+  for item in date_collect:
+    tmp_date = item
+    #print(f'\n##현재 접근중인 게시 날짜는 다음과 같습니다. {item}##\n')
+    if len(list(date_postNum.keys())) != 0:
+      if current_date == '':
+        current_date = tmp_date
+        postNum += 1
+
+      elif current_date == tmp_date:
+         postNum +=1
+         #print('1-1')
+
+      else:
+        date_postNum[current_date] = postNum - sum(date_postNum.values())
+        #print(f'current_date = {current_date}[{date_postNum[current_date]}]\npostNum = {postNum}')
+        current_date = tmp_date
+        postNum +=1
+        #print('1-2')
+         
+    else:
+      if current_date == '':
+        current_date = tmp_date
+        postNum += 1
+        #print('2-1')
+      
+      elif current_date == tmp_date:
+        postNum += 1
+        #print('2-2')
+
+      else:
+        date_postNum[current_date] = postNum
+        #print(f'\nINITIALIZED\ncurrent_date = {current_date}[{date_postNum[current_date]}]\npostNum = {postNum}')
+        current_date = tmp_date
+        postNum +=1
+        #print('2-3')
+
+
+  return date_postNum, postNum
+      
+
+
+def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date = '2024-01-11', 
+  date_postNum = {}):
+  '''DateChecker 함수와 bookmarker 함수를 사용해 게시 날짜에 따른 게시물 수를 정리하는 함수입니다.
+    Args:
+      flag (boolean) : 원하는 날짜의 게시물 수를 찾을 때까지 while문을 진행시키는 플래그 역할의 boolean 변수입니다.
+      page_num (int) : 검색을 시작하는 page number를 설정하는 integer 변수입니다.
+      postNum (int) : 검색 과정에서 수합한 게시물의 총 개수를 저장하는 integer 변수입니다.
+      intended_date (str) : 알아내고자 하는 날짜를 저장하는 string 변수입니다.
+      date_postNum (dictionary) : 게시날짜를 key로, 게시물 수를 value로 저장하는 dictionary 변수입니다.
+    Return:
+      게시날짜 - 게시물 수가 저장된 dictionary 변수 date_postNum을 리턴합니다.
+  '''
+  flag = False
+  page_num = 1
+  postNum = 0
+  intended_date = '2024-01-11'
+  date_postNum = {}
+
+  while not (flag):
+      date_collect, page_num = DateChecker(page_num=page_num, intended_date=intended_date)
+      date_postNum, postNum = Bookmarker(date_postNum=date_postNum, date_collect= date_collect, page_num=page_num, postNum=postNum)
+
+      if intended_date in date_postNum.keys():
+          flag = True
+          #print(f'게시 날짜에 따른 게시물 수는 다음과 같습니다. {date_postNum}')
+          """  elif page_num == 10:
+          flag = True
+          print(f'[overflowError] 게시 날짜에 따른 게시물 수는 다음과 같습니다. {date_postNum}')"""
+      
+      else:
+          page_num += 1
+
+      # print('#'*10)
+      # print(f'현재 page_num은 {page_num-1}이고, date_postNum 상태는 아래와 같습니다. \n {date_postNum}\n')
+      # print(f'현재 postNum은 {postNum}입니다.')
+      # print('#'*10)
+  date_postNum['totalPostNum'] = postNum
+  return date_postNum
