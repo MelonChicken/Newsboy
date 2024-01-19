@@ -1,0 +1,5 @@
+{
+  "debug.javascript.terminalOptions": {},
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.autoImportCompletions": false
+}

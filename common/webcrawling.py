@@ -1,3 +1,4 @@
+from urllib import response
 import requests
 from requests import get
 from bs4 import BeautifulSoup
@@ -83,7 +84,7 @@ def PreprocessPost(soup_innerContent, intended_date = 'YYYY-MM-DD'):
   CookedPost_list = []
 
   for post in RawPost_list:
-    print('\n\n')
+    #print('\n\n')
     #print(post)
 
     tmp_post = Post()
@@ -93,7 +94,7 @@ def PreprocessPost(soup_innerContent, intended_date = 'YYYY-MM-DD'):
     #print(f'cooked_date is {cooked_written_date}')
 
     tmp_post.id = f'{cooked_written_date}-{post.find("td", class_ = "gall_num").text}'
-    print(f'tmp_post.id = {tmp_post.id}')
+    #print(f'tmp_post.id = {tmp_post.id}')
     
     tmp_post.user = post.find('span', class_ = 'nickname').attrs['title']
     tmp_ip = post.find('span', class_ = 'ip')
@@ -101,30 +102,78 @@ def PreprocessPost(soup_innerContent, intended_date = 'YYYY-MM-DD'):
     if tmp_ip != None:
       tmp_post.user = f'{tmp_post.user} {tmp_ip.text}'
 
-    print(f'tmp_post.user = {tmp_post.user}')
+    #print(f'tmp_post.user = {tmp_post.user}')
 
     tmp_post.views = int(post.find('td', class_ = 'gall_count').text)
-    print(f'tmp_post.views = {tmp_post.views}')
+    #print(f'tmp_post.views = {tmp_post.views}')
 
     tmp_post.likes = int(post.find('td', class_ = 'gall_recommend').text)
-    print(f'tmp_post.likes = {tmp_post.likes}')
+    #print(f'tmp_post.likes = {tmp_post.likes}')
     
-    tmp_post.replies = int(post.find("span", class_ = 'reply_num').text[1:-1])
-    print(f'tmp_post.replies = {tmp_post.replies}')
+    tmp_post.replies = post.find("span", class_ = 'reply_num').text[1:-1]
+    #보이스 리플이라는 댓글 기능은 댓글 카운트 시 '/'를 통해 구분하므로 이로인해 발생하는 오류를 막아주기 위해 조건 추가
+    if '/' in tmp_post.replies:
+       tmp_post.replies = (tmp_post.replies).split('/')
+       tmp_post.replies = int(tmp_post.replies[0]) + int(tmp_post.replies[1])
+    else:
+       tmp_post.replies = int(tmp_post.replies)
+    #print(f'tmp_post.replies = {tmp_post.replies}')
 
     tmp_postA = post.find('td', class_ = "gall_tit").find('a')
     #print(f'tmp_postA = {tmp_postA}')
     tmp_post.title = tmp_postA.text
-    print(f'tmp_post.title = {tmp_post.title}')
+    #print(f'tmp_post.title = {tmp_post.title}')
     
     tmp_post.url = tmp_post.url + tmp_postA.attrs['href']
-    print(f'tmp_post.url = {tmp_post.url}')
+    #print(f'tmp_post.url = {tmp_post.url}')
 
     CookedPost_list.append(tmp_post)
 
     #print(CookedPost_list)
   return CookedPost_list
+
+def postContentScrapping (CookedPost_list):
+  '''데이터 전처리 과정에서 얻은 Post 클래스를 원소로 저장한 리스트를 인수로 받아 해당 post의 content를 저장하여 리스트를 다시 리턴하는 함수입니다.
+  Args:
+    CookedPost_list (list) : 데이터 전처리 과정에서 얻은 Post 클래스를 원소로 저장한 리스트입니다.
+  Return:
+    Content를 추가한 CookedPost_list를 리턴합니다.
+  '''
+  CookedPost_list = CookedPost_list
+  ContentAddedPost_list = []
+  for post in CookedPost_list:
     
+    headers = {
+        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'}
+
+    response = get(post.url, headers=headers)
+
+    if response.status_code != 200:
+      print(f"Can't request website, and the response code is {response.status_code}. \n")
+      post.contents = f"Can't request website, and the response code is {response.status_code}. \n"
+      ContentAddedPost_list.append(post)
+      continue
+    
+    else:
+       resp_content = response.content
+       #print(resp_content)
+       soup_content = BeautifulSoup(resp_content, 'html.parser')
+       if soup_content == None:
+          print('cannot find the content')
+       
+       post_content = soup_content.find('div', class_ = 'writing_view_box').get_text()
+       post_content = post_content.replace('&nbsp;', '  ')
+
+       post.contents = post_content
+       ContentAddedPost_list.append(post)
+       #print(f"Current Post's title is {ContentAddedPost_list[-1].title} and content is {ContentAddedPost_list[-1].content}")
+       
+  return ContentAddedPost_list
+
+
+             
+
+
 def DateChecker(page_num = 1, ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
   
   '''입력받은 URL에 대하여 분석하고자 하는 날짜의 게시물들을 타겟팅하는 함수입니다. 디시인사이드 실시간베스트에 특화된 함수입니다.
@@ -250,7 +299,7 @@ def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date =
       intended_date (str) : 알아내고자 하는 날짜를 저장하는 string 변수입니다.
       date_postNum (dictionary) : 게시날짜를 key로, 게시물 수를 value로 저장하는 dictionary 변수입니다.
     Return:
-      게시날짜 - 게시물 수가 저장된 dictionary 변수 date_postNum을 리턴합니다.
+      (1) 특정 게시 날짜에 업로드된 최초의 게시물의 페이지 위치와 날짜를 저장한 dictionary 변수를 리턴합니다.
   '''
   flag = False
   page_num = 1
@@ -277,4 +326,19 @@ def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date =
       # print(f'현재 postNum은 {postNum}입니다.')
       # print('#'*10)
   date_postNum['totalPostNum'] = postNum
-  return date_postNum
+
+  
+  datekeyList = sorted(date_postNum.keys(), reverse=True)[1:]
+  date_page = {}
+  cnt = 0
+
+  for key in datekeyList:
+      cnt += date_postNum[key]
+      
+      flag = int(str(cnt)[-1])
+      if flag == 0:
+          date_page[key] = int(cnt/100)
+      else:
+          date_page[key] = int(cnt/100) + 1
+      
+  return date_page
