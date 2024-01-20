@@ -19,14 +19,18 @@
 
 # most_similar('그대', word_to_id, id_to_word, C, top=5) """
 
-from common.webcrawling import PreprocessPost, URLRequest, DateChecker_Handle, postContentScrapping
+from common.webcrawling import PreprocessPost, URLRequest, DateChecker_Handle, postContentScrapping, ScrapIAWDate
 from common.postPreprocess import dataTransformation, Content2Keyword
-sample = postContentScrapping(PreprocessPost(URLRequest()))
+""" sample = postContentScrapping(PreprocessPost(URLRequest()))
 
 sample = Content2Keyword(sample)
 
 sample = dataTransformation(sample)[['CORPUS', 'KEYWORDS']]
-print(sample)
+print(sample) """
 #date_postNum = DateChecker_Handle(intended_date='2024-01-12')
 
 #[date_1 : 123 date_2 : 001 date_3 : 111 totalPostNum]
+
+test_result = ScrapIAWDate(From_ = '2024-01-18', To_ = '2024-01-19')
+
+test_result.to_excel('test.xlsx')

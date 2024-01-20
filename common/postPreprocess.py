@@ -31,8 +31,10 @@ def Content2Keyword(CookedPost_list):
         tmp_wholePie = tmp_title + ' ' + tmp_contents
 
         tmp_corpus, tmp_word2id, tmp_id2word = preprocessKOR(tmp_wholePie)
-        post.corpus = tmp_corpus
 
+        tmp_corpusWord = [tmp_id2word[id_] for id_ in tmp_corpus]
+        post.corpus = tmp_corpusWord
+        
         tmp_statistics_wordID = {}
 
         cnt = 0
@@ -75,7 +77,8 @@ def dataTransformation(CookedPost_list):
     CookedPost_list를 pandas dataFrame 형태로 변환하여 리턴합니다.
     '''
 
-    dataFrame_empty = pd.DataFrame(columns = ['ID', 'USER NAME', 'VIEWS', 'LIKES', 'REPLIES', 'TITLE', 'CONTENTS', 'CORPUS', 'KEYWORDS', 'URL']) #열은 columns로 지정, 행은 index로 지정 (dtypes should be LIST)
+    dataFrame_empty = pd.DataFrame(columns = ['ID', 'USER NAME', 'VIEWS', 'LIKES', 'REPLIES', 'TITLE', 'CONTENTS', 'CORPUS', 'KEYWORDS', 'URL'])
+     #열은 columns로 지정, 행은 index로 지정 (dtypes should be LIST)
     ''' 사전에 정의한 Post의 클래스 정보는 아래와 같다.
         class Post():
         id = 'YYMMDD-#####'
@@ -94,7 +97,7 @@ def dataTransformation(CookedPost_list):
     #저장하고자 하는 데이터를 넣는 작업 (조회수를 기준으로 정렬할 것임.)
     cnt = 1
     for post in sorted(CookedPost_list, key = lambda x: x.views, reverse = True):
-        print(post.contents)
+        # print(post.contents)
         dataFrame_empty.loc[cnt] = [post.id, post.user, post.views, post.likes, post.replies, post.title, post.contents, post.corpus, post.keywords, post.url]
         cnt+=1
 

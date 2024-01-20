@@ -2,6 +2,9 @@ from urllib import response
 import requests
 from requests import get
 from bs4 import BeautifulSoup
+import pandas as pd 
+
+from common.postPreprocess import dataTransformation, Content2Keyword
 
 def URLRequest(page_num = 1, ftrset = '1', intended_date = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
   '''입력받은 URL에 대하여 웹스크래핑을 하는 함수입니다. 디시인사이드 실시간베스트에 특화된 함수입니다.
@@ -302,10 +305,6 @@ def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date =
     Return:
       (1) 특정 게시 날짜에 업로드된 최초의 게시물의 페이지 위치와 날짜를 저장한 dictionary 변수를 리턴합니다.
   '''
-  flag = False
-  page_num = 1
-  postNum = 0
-  intended_date = '2024-01-11'
   date_postNum = {}
 
   while not (flag):
@@ -343,3 +342,43 @@ def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date =
           date_page[key] = int(cnt/100) + 1
       
   return date_page
+
+def ScrapIAWDate(From_ = 'YYYY-MM-DD', To_ = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+    '''이 함수는 지정한 두 날짜 사이에 있는 게시물들을 크롤링하는 함수입니다.
+        Args:
+            From_ (str) : 크롤링할 게시물의 게시 날짜 하한
+            To_ (str) : 크롤링할 게시물의 게시날짜 상한
+            base_url (str) : 혹시 모르니 url 기본 세팅
+        
+        Return:
+            해당 기간의 게시물을 pandas 형태로 리턴합니다.
+    '''
+    date_page = DateChecker_Handle(intended_date=From_)
+    print(f'The current date_page is {date_page}.')
+
+    sortedKeys = sorted(date_page.keys(), reverse=True)
+    #date_page.keys()에서 to_의 날짜가 가장 최근 날짜인지를 확인한다. (크롤링 시작 지점을 확인하기 위함.)
+    if To_ == sortedKeys[0]:
+       StartPage = 1
+    else:
+       To_idx = sortedKeys.index(To_)
+       StartPage = date_page[sortedKeys[To_idx-1]]
+    
+    EndPage = date_page[From_]
+    dataFrame_cnt = pd.DataFrame(columns = ['ID', 'USER NAME', 'VIEWS', 'LIKES', 'REPLIES', 'TITLE', 'CONTENTS', 'CORPUS', 'KEYWORDS', 'URL'])
+    for i in range(StartPage, EndPage+1):
+       URLRequest_result = URLRequest(page_num=i)
+       PreprocessPost_result = PreprocessPost(URLRequest_result)
+       postContentScrapping_result = postContentScrapping(PreprocessPost_result)
+
+       Content2Keyword_result = Content2Keyword(postContentScrapping_result)
+       dataTransformation_result = dataTransformation(Content2Keyword_result)
+
+       dataFrame_cnt = pd.concat([dataFrame_cnt, dataTransformation_result], axis = 0)
+       print(f'Scrapping is done on the {i} page')
+       dataTransformation_result.to_excel(f'test{i}Page.xlsx')
+    return dataFrame_cnt
+
+
+
+       
