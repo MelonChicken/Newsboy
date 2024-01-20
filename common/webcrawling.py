@@ -343,18 +343,18 @@ def DateChecker_Handle (flag = False, page_num = 1, postNum = 0, intended_date =
       
   return date_page
 
-def ScrapIAWDate(From_ = 'YYYY-MM-DD', To_ = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/'):
+def ScrapIAWDate(From_ = 'YYYY-MM-DD', To_ = 'YYYY-MM-DD', base_url = 'https://gall.dcinside.com/board/lists/', concatAll =True):
     '''이 함수는 지정한 두 날짜 사이에 있는 게시물들을 크롤링하는 함수입니다.
         Args:
             From_ (str) : 크롤링할 게시물의 게시 날짜 하한
             To_ (str) : 크롤링할 게시물의 게시날짜 상한
             base_url (str) : 혹시 모르니 url 기본 세팅
-        
+            caoncatALl (boolean) : 날짜별로 따로 구분하고자 하면 False, 날짜 구분 없이 하나의 데이터 프레임을 얻고자하면 True
         Return:
             해당 기간의 게시물을 pandas 형태로 리턴합니다.
     '''
     date_page = DateChecker_Handle(intended_date=From_)
-    print(f'The current date_page is {date_page}.')
+    #print(f'The current date_page is {date_page}.')
 
     sortedKeys = sorted(date_page.keys(), reverse=True)
     #date_page.keys()에서 to_의 날짜가 가장 최근 날짜인지를 확인한다. (크롤링 시작 지점을 확인하기 위함.)
@@ -365,7 +365,8 @@ def ScrapIAWDate(From_ = 'YYYY-MM-DD', To_ = 'YYYY-MM-DD', base_url = 'https://g
        StartPage = date_page[sortedKeys[To_idx-1]]
     
     EndPage = date_page[From_]
-    dataFrame_cnt = pd.DataFrame(columns = ['ID', 'USER NAME', 'VIEWS', 'LIKES', 'REPLIES', 'TITLE', 'CONTENTS', 'CORPUS', 'KEYWORDS', 'URL'])
+    dataFrame_all = pd.DataFrame(columns = ['ID', 'USER NAME', 'VIEWS', 'LIKES', 'REPLIES', 'TITLE', 'CONTENTS', 'CORPUS', 'KEYWORDS', 'URL'])
+    dataFrame_sep = []
     for i in range(StartPage, EndPage+1):
        URLRequest_result = URLRequest(page_num=i)
        PreprocessPost_result = PreprocessPost(URLRequest_result)
@@ -373,11 +374,15 @@ def ScrapIAWDate(From_ = 'YYYY-MM-DD', To_ = 'YYYY-MM-DD', base_url = 'https://g
 
        Content2Keyword_result = Content2Keyword(postContentScrapping_result)
        dataTransformation_result = dataTransformation(Content2Keyword_result)
-
-       dataFrame_cnt = pd.concat([dataFrame_cnt, dataTransformation_result], axis = 0)
-       print(f'Scrapping is done on the {i} page')
-       dataTransformation_result.to_excel(f'test{i}Page.xlsx')
-    return dataFrame_cnt
+       if concatAll:
+          dataFrame_all = pd.concat([dataFrame_all, dataTransformation_result], axis = 0)
+       else:
+          dataFrame_sep.append(dataTransformation_result)
+       #print(f'Scrapping is done on the {i} page')
+    if concatAll:
+       return dataFrame_all
+    else:
+       return dataFrame_sep
 
 
 
