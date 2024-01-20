@@ -76,6 +76,7 @@ def PreprocessPost(soup_innerContent, intended_date = 'YYYY-MM-DD'):
     replies = 0
     title = 'what a wonderful world.'
     contents = 'This is the whole sentence of the single post.'
+    corpus = []
     keywords = []
     url = 'https://gall.dcinside.com'
   

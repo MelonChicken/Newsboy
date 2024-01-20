@@ -20,10 +20,12 @@
 # most_similar('그대', word_to_id, id_to_word, C, top=5) """
 
 from common.webcrawling import PreprocessPost, URLRequest, DateChecker_Handle, postContentScrapping
-from common.postPreprocess import dataTransformation
+from common.postPreprocess import dataTransformation, Content2Keyword
 sample = postContentScrapping(PreprocessPost(URLRequest()))
 
-sample = dataTransformation(sample)[['CONTENTS']]
+sample = Content2Keyword(sample)
+
+sample = dataTransformation(sample)[['CORPUS', 'KEYWORDS']]
 print(sample)
 #date_postNum = DateChecker_Handle(intended_date='2024-01-12')
 
